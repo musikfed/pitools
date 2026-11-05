@@ -1,3 +1,13 @@
+## 🌐 PITOOLS · Интерактивная схема параллельного деплоя / Live source-based flow
+
+**[Открыть сайт PITOOLS — SSH/SFTP и SHA-256: визуализация по исходникам](https://musikfed.github.io/view_my_prj/pitools/)**
+
+[Общая инженерная галерея](https://musikfed.github.io/view_my_prj/) · [Разбор реального выполнения и ограничений](docs/WEB-DEMO-RU.md)
+
+Веб-сайт — безопасная иллюстрация программы: без настоящих SSH-подключений и без изменения скрипта. Ограничения проверки целостности открыто указаны на сайте.
+
+---
+
 # PITOOLS
 
 PITOOLS is a lightweight DevOps framework for parallel file and directory deployment to multiple SSH servers using a compact `.prj` format. It uses SSH/SFTP, asyncio concurrency and SHA-256 verification without requiring agents on target hosts.

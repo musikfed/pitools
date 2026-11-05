@@ -817,4 +817,3 @@ cd \~/pitools
 
 [**Multilingual project presentation, architecture SVG and contacts**](docs/showcase/README.md)
 
-![pitools project architecture](docs/showcase/overview.svg)

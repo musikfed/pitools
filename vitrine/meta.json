@@ -1,0 +1,21 @@
+{
+  "schema_version": "1.0",
+  "id": "pitools",
+  "title": "pitools",
+  "version": "—",
+  "description": "PITOOLS v6.1 — параллельный деплой через .prj",
+  "subtitle": null,
+  "tags": [
+    "Python"
+  ],
+  "visibility": "public",
+  "publication": "publish_on_merge",
+  "public_private_approved": false,
+  "display_mode": "diagram",
+  "status": "Черновик — ожидает проверки",
+  "repo_url": "https://github.com/musikfed/pitools",
+  "screenshots": [],
+  "cover": "vitrine/generated/cover.svg",
+  "cover_type": "schematic-not-screenshot",
+  "screenshot_source": "not-available"
+}

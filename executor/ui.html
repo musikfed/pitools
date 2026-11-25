@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PEGINELAB Executor · PiTools 7</title>
+<style>
+:root{font:15px/1.5 system-ui,Segoe UI,sans-serif;color:#e4eef7;background:#0b121b}
+*{box-sizing:border-box}body{margin:0}header{border-bottom:1px solid #2d4052;background:#111d29}
+.wrap{width:min(1250px,calc(100% - 32px));margin:auto}header .wrap{padding:20px 0;display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap}
+h1{font-size:24px;letter-spacing:.08em;margin:0}h2{font-size:18px}p,.muted{color:#9bb0c2}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin:26px 0}button,input,select{font:inherit;border-radius:9px;padding:10px;background:#172533;color:#eff7ff;border:1px solid #40566c}
+button{cursor:pointer}button.active{background:#2c587b}input{width:290px;max-width:100%}
+section{display:none}section.active{display:block}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}.card{background:#13202d;border:1px solid #294054;border-radius:14px;padding:18px;overflow-wrap:anywhere}
+.stat{font-size:28px;font-weight:750;color:#e9c48e}.label{color:#9bb0c2;font-size:13px}
+table{width:100%;border-collapse:collapse}td,th{text-align:left;border-bottom:1px solid #344454;padding:10px;vertical-align:top}
+pre{white-space:pre-wrap;word-break:break-word;background:#0b1520;padding:12px;border-radius:10px;max-height:300px;overflow:auto}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.tag{display:inline-block;padding:3px 8px;border-radius:6px;background:#294158;color:#c9e4f5;font-size:12px}
+.good{color:#82d9ac}.warn{color:#f3c18b}.err{color:#ff9898}
+footer{color:#91a6b6;border-top:1px solid #344454;margin-top:40px;padding:24px 0}
+</style></head>
+<body><header><div class="wrap"><div><h1>PEGINELAB / PITOOLS EXECUTOR</h1><div class="muted">Контур управления · Ubuntu 10999 · Windows агент · без второй LLM</div></div><div class="row"><input id="token" type="password" placeholder="Control token · не хранится на диске" autocomplete="off"><button id="connect">Подключиться</button><span id="connection" class="tag">Не подключено</span></div></div></header>
+<main class="wrap"><nav><button data-tab="overview">Хосты и метрики</button><button data-tab="jobs">Операции</button><button data-tab="architecture">Архитектура</button></nav>
+<section id="overview"><div id="hosts" class="grid"><div class="card">Введите контрольный токен, затем нажмите «Подключиться».</div></div></section>
+<section id="jobs"><div class="card"><h2>Разрешённые диагностические операции</h2><p>Только чтение: host.snapshot, clock.read, git.status, git.diff_stat. Произвольных команд и удаления файлов нет.</p>
+<div class="row"><select id="host"><option value="ubuntu">Ubuntu</option><option value="acer">Acer Windows</option></select>
+<select id="kind"><option>host.snapshot</option><option>clock.read</option><option>git.status</option><option>git.diff_stat</option></select>
+<input id="repo" placeholder="Абсолютный путь Git-репозитория"><button id="submit">Запросить</button></div><p id="message" class="muted"></p></div><div class="card" style="margin-top:14px"><h2>Последние задания</h2><div id="jobrows">Нет данных</div></div></section>
+<section id="architecture"><div class="grid">
+<div class="card"><h2>01 · GPT-6</h2><p>Принимает решения и инициирует строго типизированные инструменты. Подключение к ChatGPT требует настройки совместимого MCP-сервера.</p></div>
+<div class="card"><h2>02 · GitHub</h2><p>Исходники, PR, CI и аудит. Токен GitHub не передаётся браузеру; пока используется существующее подключение.</p></div>
+<div class="card"><h2>03 · Ubuntu</h2><p>HTTPS-порт 10999, SQLite-очередь, сбор метрик, журнал результатов. Рабочие данные в /1tbdisk.</p></div>
+<div class="card"><h2>04 · Acer</h2><p>Windows 11 Pro, исходящий HTTPS-опрос контроллера, локальные метрики, выполнение разрешённых операций.</p></div>
+</div></section></main>
+<footer><div class="wrap">PITOOLS 6.1 сохранён отдельно · Executor 7.0-pre · Интерфейс не является доступом к произвольному терминалу</div></footer>
+<script>
+"use strict";
+let key="";let selected=localStorage.getItem("pitools-executor-tab")||"overview";
+function switchTab(tab){selected=tab;localStorage.setItem("pitools-executor-tab",tab);
+ document.querySelectorAll("nav button").forEach(b=>b.classList.toggle("active",b.dataset.tab===tab));
+ document.querySelectorAll("main section").forEach(s=>s.classList.toggle("active",s.id===tab));}
+document.querySelectorAll("nav button").forEach(b=>b.addEventListener("click",()=>switchTab(b.dataset.tab)));
+switchTab(selected);
+document.getElementById("connect").onclick=()=>{key=document.getElementById("token").value.trim();load();};
+async function api(path,method="GET",body){if(!key)throw Error("Сначала введите control token");
+ const r=await fetch(path,{method,headers:{"Authorization":"Bearer "+key,"Content-Type":"application/json"},
+ body:body?JSON.stringify(body):undefined,cache:"no-store"});
+ const j=await r.json();if(!r.ok)throw Error(j.error||"HTTP "+r.status);return j;}
+function node(tag,cls,text){const el=document.createElement(tag);if(cls)el.className=cls;if(text!==undefined)el.textContent=String(text);return el;}
+function fmt(v){if(v===null||v===undefined)return "нет данных";return String(v);}
+function gb(v){return typeof v==="number"?(v/1073741824).toFixed(1)+" ГБ":"нет данных";}
+function renderHosts(list){const root=document.getElementById("hosts");root.replaceChildren();
+ for(const h of list){const d=node("div","card");d.append(node("h2","",h.host==="ubuntu"?"Huananzhi · Ubuntu":"Acer Swift 3 · Windows"));
+ const s=h.snapshot||{};const stats=[["Состояние",h.last_seen?"Последняя связь: "+h.last_seen:"Контроллер"],["CPU",fmt(s.cpu_percent)+" % · "+fmt(s.cpu_threads)+" потоков"],["RAM",gb(s.ram_used)+" / "+gb(s.ram_total)],["GPU",s.gpu?.gpus?.map(x=>x.name+" · "+fmt(x.vram_used_mib)+"/"+fmt(x.vram_total_mib)+" MiB VRAM").join("; ")||s.gpu?.names?.join(", ")||"не определено"],["Диски",(s.disks||[]).map(x=>x.mount+": "+(x.available?gb(x.free)+" свободно":"недоступен")).join("; ")],["Время",fmt(s.observed_at)]];
+ for(const [k,v] of stats){d.append(node("div","label",k));d.append(node("div","",v));}root.append(d);}}
+function renderJobs(list){const root=document.getElementById("jobrows");root.replaceChildren();
+ for(const j of list){const d=node("div","");d.append(node("div","",j.created_at+" · "+j.host+" · "+j.kind+" · "+j.state));
+ if(j.result){const p=node("pre","",JSON.stringify(j.result,null,2));d.append(p);}root.append(d);}
+ if(!list.length)root.textContent="Заданий пока нет";}
+async function load(){if(!key)return;try{const [h,j]=await Promise.all([api("/api/hosts"),api("/api/jobs")]);renderHosts(h.hosts);renderJobs(j.jobs);
+ document.getElementById("connection").textContent="Связь установлена";document.getElementById("connection").className="tag good";
+ }catch(e){document.getElementById("connection").textContent="Ошибка подключения";document.getElementById("connection").className="tag err";document.getElementById("message").textContent=e.message;}}
+document.getElementById("submit").onclick=async()=>{const kind=document.getElementById("kind").value;
+ const repo=document.getElementById("repo").value.trim();const args=kind.startsWith("git.")?{repo}:{};
+ try{const r=await api("/api/jobs","POST",{host:document.getElementById("host").value,kind,args});
+ document.getElementById("message").textContent="Задание "+r.id+" · "+r.state;await load();}
+ catch(e){document.getElementById("message").textContent=e.message;}};
+setInterval(()=>{if(key&&document.visibilityState==="visible")load()},10000);
+</script></body></html>
